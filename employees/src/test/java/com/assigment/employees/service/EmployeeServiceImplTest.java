@@ -1,8 +1,7 @@
 package com.assigment.employees.service;
 
-import com.assigment.employees.dto.EmployeePayload;
-import com.assigment.employees.dto.EmployeeRequestDto;
-import com.assigment.employees.dto.EmployeeResponsedto;
+
+import com.assigment.employees.dto.*;
 import com.assigment.employees.model.Employee;
 import com.assigment.employees.repository.EmployeeRepository;
 import org.junit.jupiter.api.Assertions;
@@ -27,6 +26,8 @@ class EmployeeServiceImplTest {
     @MockBean
     EmployeeRepository employeeRepository;
 
+
+
     @BeforeEach
     void setUp() {
     }
@@ -47,16 +48,7 @@ class EmployeeServiceImplTest {
         EmployeePayload employeePayload = new EmployeePayload();
         employeePayload.setEmployees(employeeRequestDtoList);
 
-        Employee employee = Employee.builder()
-                .empName("Nahida")
-                .amount(20000)
-                .department("IT")
-                .currency("INR")
-                .joiningDate("may-06-2023")
-                .exitDate("jun-04-2024")
-                .build();
-        List<Employee> employeeList = new ArrayList<>();
-        employeeList.add(employee);
+        List<Employee> employeeList = getEmployee();
 
         Mockito.when(employeeRepository.findAll()).thenReturn(employeeList);
 
@@ -74,7 +66,38 @@ class EmployeeServiceImplTest {
     @Test
     void getAllEmployeeEligibleForBonusTest() {
 
+        String bonusDate = "may-20-2024";
 
+        List<Employee> employeeList = getEmployee();
+        Mockito.when(employeeRepository.findAll()).thenReturn(employeeList);
 
+        BonusEmployeeResponsePayload bonusEmployeeDataDtos = employeeService.getAllEmployeeEligibleForBonus(bonusDate);
+
+        List<BonusEmployeeDataDto> list = bonusEmployeeDataDtos.getData();
+         BonusEmployeeDataDto bonusEmployeeDataDto = list.get(0);
+
+        Assertions.assertEquals("Nahida",employeeList.get(0).getEmpName());
+        Assertions.assertEquals(20000,employeeList.get(0).getAmount());
+        Assertions.assertEquals("IT",employeeList.get(0).getDepartment());
+        Assertions.assertEquals("INR",employeeList.get(0).getCurrency());
+        Assertions.assertEquals("may-06-2023",employeeList.get(0).getJoiningDate());
+        Assertions.assertEquals("INR",bonusEmployeeDataDto.getCurrency());
+        Assertions.assertEquals("Nahida",bonusEmployeeDataDto.getEmployees().get(0).getEmpName());
+        Assertions.assertEquals(20000,bonusEmployeeDataDto.getEmployees().get(0).getAmount());
+    }
+
+    List<Employee> getEmployee(){
+        Employee employee = Employee.builder()
+                .empName("Nahida")
+                .amount(20000)
+                .department("IT")
+                .currency("INR")
+                .joiningDate("may-06-2023")
+                .exitDate("jun-04-2024")
+                .build();
+        List<Employee> employeeList = new ArrayList<>();
+        employeeList.add(employee);
+
+        return employeeList;
     }
 }
