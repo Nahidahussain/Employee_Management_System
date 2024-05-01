@@ -1,6 +1,7 @@
 package com.assigment.employees.service;
 
 import com.assigment.employees.dto.*;
+import com.assigment.employees.model.Department;
 import com.assigment.employees.model.Employee;
 import com.assigment.employees.repository.DepartmentRepository;
 import com.assigment.employees.repository.EmployeeRepository;
@@ -26,9 +27,17 @@ public class EmployeeServiceImpl {
 
         List<EmployeeRequestDto> employeeRequestDtoList = employeePayload.getEmployees();
 
-        List<Employee> employeeList = employeeRequestDtoList.stream().map(employeeRequestDto -> EmployeeTransformer.employeeRequestDtoToEmployee(employeeRequestDto)).collect(Collectors.toList());
 
+        List<Employee> employeeList = employeeRequestDtoList.stream().map(employeeRequestDto -> EmployeeTransformer.employeeRequestDtoToEmployee(employeeRequestDto)).collect(Collectors.toList());
         List<Employee> savedEmployeeList = employeeRepository.saveAll(employeeList);
+
+
+        List<Department> departmentList = savedEmployeeList.stream().map(employee -> Department.builder()
+                .department(employee.getDepartment())
+                .employeeId(employee.getId())
+                .build()).collect(Collectors.toList());
+        departmentRepository.saveAll(departmentList);
+
 
         // prepare the response dto from the saved entity
          List<EmployeeResponsedto> employeeResponsedtoList = savedEmployeeList.stream().map(employee -> EmployeeTransformer.employeeToEmployeeResponseDto(employee)).collect(Collectors.toList());
@@ -54,27 +63,41 @@ public class EmployeeServiceImpl {
         Map<String, List<Employee>> employeesByCurrencySorted = bonusList.stream()
                 .collect(Collectors.groupingBy(
                         Employee::getCurrency,
-                        TreeMap::new, // Use TreeMap to maintain lexicographical order of keys
+                        TreeMap::new,
                         Collectors.toList()
                 ));
 
 
-        List<BonusEmployeeDataDto> bonusEmployeeDataDtoList = new ArrayList<>();
-        for (String key :employeesByCurrencySorted.keySet()) {
+//        List<BonusEmployeeDataDto> bonusEmployeeDataDtoList = new ArrayList<>();
+//        for (String key :employeesByCurrencySorted.keySet()) {
+//
+//            List<Employee> employeeList1 = employeesByCurrencySorted.get(key);
+//            // prepare the EmployeesDto List
+//            List<EmployeesDto> employeesDtoList = new ArrayList<>();
+//            for (Employee employee :employeeList1) {
+//                EmployeesDto employeesDto = EmployeeTransformer.employeeToEmployeesDto(employee);
+//                employeesDtoList.add(employeesDto);
+//            }
+//            BonusEmployeeDataDto  bonusEmployeeDataDto = BonusEmployeeDataDto.builder()
+//                    .currency(key)
+//                    .employees(employeesDtoList.stream().sorted(Comparator.comparing(EmployeesDto::getEmpName)).collect(Collectors.toList()))
+//                    .build();
+//            bonusEmployeeDataDtoList.add(bonusEmployeeDataDto);
+//        }
+        List<BonusEmployeeDataDto> bonusEmployeeDataDtoList = employeesByCurrencySorted.keySet().stream()
+                .map(key -> {
+                    List<Employee> employeeList1 = employeesByCurrencySorted.get(key);
+                    List<EmployeesDto> employeesDtoList = employeeList1.stream()
+                            .map(EmployeeTransformer::employeeToEmployeesDto)
+                            .sorted(Comparator.comparing(EmployeesDto::getEmpName))
+                            .collect(Collectors.toList());
 
-            List<Employee> employeeList1 = employeesByCurrencySorted.get(key);
-            // prepare the EmployeesDto List
-            List<EmployeesDto> employeesDtoList = new ArrayList<>();
-            for (Employee employee :employeeList1) {
-                EmployeesDto employeesDto = EmployeeTransformer.employeeToEmployeesDto(employee);
-                employeesDtoList.add(employeesDto);
-            }
-            BonusEmployeeDataDto  bonusEmployeeDataDto = BonusEmployeeDataDto.builder()
-                    .currency(key)
-                    .employees(employeesDtoList.stream().sorted(Comparator.comparing(EmployeesDto::getEmpName)).collect(Collectors.toList()))
-                    .build();
-            bonusEmployeeDataDtoList.add(bonusEmployeeDataDto);
-        }
+                    return BonusEmployeeDataDto.builder()
+                            .currency(key)
+                            .employees(employeesDtoList)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         return BonusEmployeeResponsePayload.builder()
                 .data(bonusEmployeeDataDtoList)
